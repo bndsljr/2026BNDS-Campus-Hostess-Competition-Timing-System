@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="robots" content="noindex" />
+    <title>BNDS 主持人大赛 · 计时</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="display" id="page-body">
+    <!-- 只呈现剩余时间：没有标题、没有进度条、没有按钮 -->
+    <div id="stage">
+      <div class="clock" id="clock" data-state-target="#page-body" aria-live="off"></div>
+    </div>
+
+    <!-- 休息模式：不显示时间，改显示赛事标题 -->
+    <div class="break-title" id="break-title">
+      <span class="bt-num">2026</span>
+      <span class="bt-cjk">主持人大赛</span>
+    </div>
+
+    <!-- 左上角标识（透明底，不遮挡计时数字） -->
+    <picture class="corner-logo">
+      <source srcset="/logo.webp" type="image/webp" />
+      <img src="/logo.png" alt="BNDS TV" draggable="false" />
+    </picture>
+
+    <!-- 仅在连接异常时淡入，正常情况下完全不可见 -->
+    <div class="notice" id="notice">连接中断，正在重连…</div>
+
+    <script src="/shared.js"></script>
+    <script src="/display.js"></script>
+  </body>
+</html>

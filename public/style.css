@@ -1,0 +1,931 @@
+/* BNDS Host Competition Timer — 浅色系样式
+ * 大屏页：只呈现剩余时间，居中、尽量占满 16:9 画面。
+ * 控制台：简洁卡片式，桌面优先。
+ */
+
+:root {
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --ink: #131a24;
+  --ink-2: #5a6472;
+  --ink-3: #8a94a3;
+  --line: #e4e8ee;
+  --line-2: #eef1f5;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eef3ff;
+  --danger: #dc2626;
+  --danger-soft: #fff5f5;
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 28px rgba(16, 24, 40, 0.06);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-num: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================== 时钟组件 ============================== */
+
+.clock {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-family: var(--font-num);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: var(--ink);
+  transition: color 0.18s linear;
+}
+
+.clock i {
+  font-style: normal;
+  display: inline-block;
+  width: 0.585em;
+  text-align: center;
+}
+
+.clock i.colon {
+  width: 0.3em;
+  font-weight: 500;
+  color: #aab3c0;
+  transform: translateY(-0.06em);
+}
+
+/* 倒数 10 秒：数字变红并闪动（无提示音） */
+.clock.is-final i {
+  animation: clock-flash-final 1s steps(1, end) infinite;
+}
+
+.clock.is-final i.colon {
+  animation: clock-flash-final-soft 1s steps(1, end) infinite;
+}
+
+@keyframes clock-flash-final {
+  0%,
+  49.99% {
+    color: var(--danger);
+    text-shadow: 0 0 0.24em rgba(220, 38, 38, 0.12);
+  }
+  50%,
+  100% {
+    color: #ef9a9a;
+    text-shadow: none;
+  }
+}
+
+@keyframes clock-flash-final-soft {
+  0%,
+  49.99% {
+    color: #e59a9a;
+  }
+  50%,
+  100% {
+    color: #f2cccc;
+  }
+}
+
+/* 归零：闪得更强，并联动整屏底色（无提示音） */
+.clock.is-zero i {
+  animation: clock-flash 1s steps(1, end) infinite;
+}
+
+.clock.is-zero i.colon {
+  color: #e8b4b4;
+  animation: clock-flash-soft 1s steps(1, end) infinite;
+}
+
+@keyframes clock-flash {
+  0%,
+  49.99% {
+    color: var(--danger);
+    text-shadow: 0 0 0.28em rgba(220, 38, 38, 0.16);
+  }
+  50%,
+  100% {
+    color: #f0b9b9;
+    text-shadow: none;
+  }
+}
+
+@keyframes clock-flash-soft {
+  0%,
+  49.99% {
+    color: #e8a3a3;
+  }
+  50%,
+  100% {
+    color: #f6dede;
+  }
+}
+
+/* ============================== 休息模式标题 ==============================
+ * 休息时大屏不显示剩余时间，改显示「2026BNDS主持人大赛」。
+ * 主大屏排成一行，竖条屏排成一列（尺寸见各自的 body 规则）。 */
+
+.break-title {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.26em;
+  font-family: var(--font);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  opacity: 0;
+  visibility: hidden;
+  /* 刻意不做淡入淡出过渡：瞬时切换在任何渲染器上都确定，
+   * 不会出现"过渡停在半透明、标题发灰"的情况。 */
+  pointer-events: none;
+  user-select: none;
+}
+
+.break-title .bt-num,
+.break-title .bt-lat,
+.break-title .bt-cjk {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.is-break .break-title {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 休息时整块时钟直接隐藏（不做过渡，理由同上） */
+body.is-break .clock {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ============================== 大屏页 ============================== */
+
+body.display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+  background: radial-gradient(
+    1400px 720px at 50% -12%,
+    #ffffff 0%,
+    #f7f9fc 52%,
+    #edf1f6 100%
+  );
+  transition: background 0.35s ease;
+}
+
+body.display.is-zero {
+  animation: bg-flash 1s steps(1, end) infinite;
+}
+
+@keyframes bg-flash {
+  0%,
+  49.99% {
+    background: radial-gradient(
+      1400px 720px at 50% -12%,
+      #fff8f8 0%,
+      var(--danger-soft) 55%,
+      #fbe9e9 100%
+    );
+  }
+  50%,
+  100% {
+    background: radial-gradient(
+      1400px 720px at 50% -12%,
+      #ffffff 0%,
+      #f7f9fc 52%,
+      #edf1f6 100%
+    );
+  }
+}
+
+#stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+body.display .clock {
+  /* 16:9 屏幕上尽量占满：谁小听谁的。
+   * 五个字符共 2.64em，故 2.64 × 32vw = 84.5vw，横向永不溢出、两侧各留约 8%。 */
+  font-size: min(32vw, 57vh);
+  font-weight: 650;
+}
+
+/* 左上角标识：透明底图，等比缩放，不参与交互 */
+.corner-logo {
+  position: fixed;
+  top: 4.2vh;
+  left: 3vw;
+  margin: 0;
+  padding: 0;
+  width: clamp(112px, 11vw, 252px);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.corner-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-user-drag: none;
+}
+
+/* 大屏上的休息标题：一行排开，占屏宽约 84%
+ * 整串约 10.6em 宽，故 10.6 × 8vw = 85vw，任何宽度下都不会溢出。 */
+body.display .break-title {
+  /* 字串约 7.4em 宽（2026 + 主持人大赛），7.4 × 11.5vw ≈ 85vw，横向不溢出 */
+  font-size: min(11.5vw, 18vh);
+}
+
+body.display .break-title .bt-num {
+  letter-spacing: -0.02em;
+}
+
+body.display .break-title .bt-lat {
+  letter-spacing: 0.04em;
+}
+
+/* ============================== 侧屏（竖条屏）大屏 ==============================
+ * 侧屏 LED 接在 1920×1080 输出的左上角，所以：
+ *   - 页面本身就是一张 16:9 画布（body 铺满视口）；
+ *   - 所有画面只在左上角 256×736 的 .v-screen 区域里渲染，区域外不显示在 LED 上，
+ *     这里用接近屏幕底的浅灰填充，万一配接有几像素偏差也不会露出突兀的颜色。 */
+
+body.vertical {
+  display: block;
+  overflow: hidden;
+  user-select: none;
+  background: #eef1f6;
+}
+
+/* 「屏幕区」：模拟侧屏本身，贴在左上角。
+ * 尺寸由 v.js 按 devicePixelRatio 换算（默认 256×736 物理像素）。 */
+.v-screen {
+  position: relative;
+  width: 256px;
+  height: 736px;
+  overflow: hidden;
+  contain: layout size style; /* 同时成为内部 fixed 元素的包含块 */
+  background: radial-gradient(
+    120% 55% at 50% 0%,
+    #ffffff 0%,
+    #f7f9fc 55%,
+    #edf1f6 100%
+  );
+}
+
+/* 归零时只有屏幕区泛红，不会染到画布其余部分 */
+.v-screen.is-zero {
+  animation: bg-flash-vertical 1s steps(1, end) infinite;
+}
+
+.v-screen[data-debug="1"] {
+  outline: 2px dashed #dc2626;
+  outline-offset: -2px;
+}
+
+/* 画布本身（屏幕区之外）永远不闪 —— 归零闪动只作用在 .v-screen 上 */
+@keyframes bg-flash-vertical {
+  0%,
+  49.99% {
+    background: radial-gradient(
+      120% 55% at 50% 0%,
+      #fff8f8 0%,
+      var(--danger-soft) 60%,
+      #fbe9e9 100%
+    );
+  }
+  50%,
+  100% {
+    background: radial-gradient(
+      120% 55% at 50% 0%,
+      #ffffff 0%,
+      #f7f9fc 55%,
+      #edf1f6 100%
+    );
+  }
+}
+
+.v-stage {
+  /* container-type 让下面可以用 cqh 精确分配竖向空间：
+   * 视口高度 = 内边距 + logo + 间距 + 时钟（4 个数字行 + 1 个冒号行）
+   * 子项用 flex:1 自己分空间，所以 logo 在两种状态下位置完全一致。 */
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  overflow: hidden;
+  padding: 15px 0; /* 兜底：按 736 高屏幕区换算的 2% */
+  padding: 2cqh 0;
+  gap: 15px;
+  gap: 2cqh;
+}
+
+/* logo 也按"高度比例"定尺寸：这样竖屏上所有元素都只用 cqh，
+ * 无论屏幕是 256×736 还是带浏览器工具栏的更矮视口，比例都一致、不会互相挤压。 */
+.v-logo {
+  display: block;
+  margin: 0;
+}
+
+.v-logo img {
+  display: block;
+  /* 只用高度定尺寸，宽度由固有比例决定。
+   * 这里**不能**再加 max-width 百分比：高度是定值时，宽度一旦被 max-width 夹住，
+   * 浏览器不会按比例回缩高度 —— 结果就是 logo 被横向压扁、并贴到父元素左边。
+   * 宽度 = 8.5cqh × 固有比例 ≈ 屏幕区宽度的 47%，本来就不会溢出。 */
+  height: 63px; /* 兜底：736 的 8.5% */
+  height: 8.5cqh;
+  width: auto;
+  -webkit-user-drag: none;
+}
+
+/* 竖排时钟：每一位各占一行。
+ * 冒号行必须与数字行同为 1em —— 之前为了省高度把它压到 0.62em，
+ * 结果冒号下面的点溢出行框、被下一个数字盖住了（只剩一个点可见）。
+ * flex:1 让它吃掉 logo 以下的全部空间，数字在其中垂直居中。 */
+.clock--column {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  font-size: 118px; /* 兜底：736 的 16% */
+  font-size: 16cqh;
+  line-height: 1;
+  /* 字形在 1em 行框内上下留白并不相等（上多下少），整列居中后数字会显得偏低。
+   * 加一点底部内边距把居中内容整体顶上去（居中时位移 = 内边距的一半），
+   * 用 padding 而不是 transform —— transform 让文字落在半像素上会发虚。 */
+  padding-bottom: 0.7cqh;
+}
+
+.clock--column i {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+
+.clock--column i.colon {
+  height: 1em;
+  width: 0.3em;
+  transform: none;
+}
+
+/* 竖条屏上的休息标题：整串竖着写（自上而下），所有字等大。
+ * 三条硬约束，都是踩过坑之后加的：
+ *  1) 不用 fixed 定位，回到文档流当 flex 子项 —— 与 logo 各自占位，结构上不可能重叠；
+ *  2) 两种状态各自只保留一个弹性子项（下面两条 display 规则），
+ *     否则隐藏的标题仍会 flex:1 抢走一半空间，把数字挤到 logo 上；
+ *  3) 每个字一行、行高精确 1em（由 v.js 拆分），总高 = 13em + 组间 0.6em ≈ 76cqh，
+ *     全部可用 cqh 预算，任何屏幕高度都不会溢出 —— 不依赖字体进距，也不需要 JS 测量。
+ * 文字本身仍写在 v.html 的三个 span 里，v.js 只是把它们拆成行。 */
+body.vertical:not(.is-break) .break-title {
+  display: none;
+}
+
+body.vertical.is-break .clock {
+  display: none;
+}
+
+body.vertical .break-title {
+  position: static;
+  inset: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  font-size: 64px; /* 兜底：736 的 8.7% */
+  font-size: 8.7cqh;
+  /* 与时钟同样的道理：字形行框内上多下少，整列居中会偏低，顶上去一点。
+   * 这里比时钟多给一点：中文墨迹比数字更满，最后一行的下沿余量更小。 */
+  padding-bottom: 1.1cqh;
+}
+
+body.vertical .break-title i {
+  display: block;
+  height: 1em;
+  line-height: 1;
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* 三组之间留一点空隙，读起来有呼吸 */
+body.vertical .break-title i.group-start {
+  margin-top: 0.3em;
+}
+
+/* 无 JS 时的兜底：直接用 writing-mode 把三组文字竖排（没有逐字拆行） */
+body.vertical .break-title span {
+  display: block;
+  font-size: 59px;
+  font-size: 8cqh;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* 竖条屏右下角的重连提示：窄屏下改小一点 */
+body.vertical .notice {
+  position: absolute; /* 相对 .v-screen（含 contain:layout）定位 */
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  font-size: 11px;
+  padding: 6px 9px;
+  max-width: 92%;
+}
+
+body.vertical .notice.show {
+  transform: translateX(-50%);
+}
+
+@media (max-width: 400px) {
+  body.vertical .notice {
+    font-size: 11px;
+  }
+}
+
+/* ============================== 大屏页：重连提示 ============================== */
+
+/* 仅在异常时出现，正常连接时完全不可见 */
+.notice {
+  position: fixed;
+  left: 22px;
+  bottom: 20px;
+  font-size: 14px;
+  line-height: 1;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.notice.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================== 控制台 ============================== */
+
+body.control {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  min-height: 100%;
+  padding: 0 0 48px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-logo {
+  display: block;
+  margin: 0;
+}
+
+.brand-logo img {
+  display: block;
+  height: 34px;
+  width: auto;
+  -webkit-user-drag: none;
+}
+
+.brand span {
+  margin-left: 0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  vertical-align: 1px;
+}
+
+.topbar .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+a.link {
+  color: var(--accent);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+a.link:hover {
+  background: var(--accent-soft);
+  border-color: #dbe6ff;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 550;
+  background: #f1f5f9;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.pill.ok .dot {
+  background: #16a34a;
+}
+
+.pill.warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.pill.warn .dot {
+  background: #f59e0b;
+}
+
+.wrap {
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 26px 28px 0;
+  display: grid;
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+/* 预览卡 */
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 26px 24px 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+}
+
+body.control .clock {
+  font-size: clamp(56px, 15vh, 132px);
+}
+
+.preview.is-final {
+  border-color: #f6cccc;
+  background: linear-gradient(180deg, #fffbfb 0%, var(--danger-soft) 100%);
+}
+
+.preview.is-zero {
+  animation: card-flash 1s steps(1, end) infinite;
+}
+
+@keyframes card-flash {
+  0%,
+  49.99% {
+    background: var(--danger-soft);
+    border-color: #f6cccc;
+  }
+  50%,
+  100% {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+    border-color: var(--line);
+  }
+}
+
+.state-text {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.state-text .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.state-text[data-state="running"] .dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.14);
+}
+
+.state-text[data-state="paused"] .dot {
+  background: #f59e0b;
+}
+
+.state-text[data-state="zero"] .dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14);
+}
+
+/* 档位 */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 550;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease,
+    transform 0.06s ease, box-shadow 0.15s ease;
+}
+
+button:hover {
+  background: #f8fafc;
+  border-color: #d3dae4;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button.preset {
+  font-size: 20px;
+  font-weight: 600;
+  padding: 18px 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+button.preset.active {
+  background: var(--accent-soft);
+  border-color: #bcd3ff;
+  color: var(--accent-dark);
+  box-shadow: inset 0 0 0 1px #cddffd;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 16px 20px;
+}
+
+button.primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+button.primary.pause {
+  background: #111827;
+  border-color: #111827;
+}
+
+button.primary.pause:hover {
+  background: #1f2937;
+  border-color: #1f2937;
+}
+
+button.ghost {
+  background: #fff;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.row + .row {
+  margin-top: 12px;
+}
+
+.row .grow {
+  flex: 1 1 200px;
+}
+
+.row.tune button {
+  flex: 1 1 0;
+  min-width: 92px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 休息中：预览卡也改成显示标题，与现场画面保持一致 */
+.preview-break {
+  display: none;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.22em;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+body.is-break .preview-break {
+  display: flex;
+}
+
+.preview-break .bt-num,
+.preview-break .bt-lat,
+.preview-break .bt-cjk {
+  /* 控制台预览卡宽度随窗口变化，用相对字号保证整串永远不折行 */
+  font-size: min(7vw, 8vh);
+  white-space: nowrap;
+}
+
+.preview-break .bt-lat {
+  letter-spacing: 0.03em;
+}
+
+body.is-break .preview {
+  border-color: #f6d68a;
+  background: linear-gradient(180deg, #fffdf7 0%, #fff9ec 100%);
+}
+
+button.ghost.active {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+button.ghost.active:hover {
+  background: #fde9b0;
+  border-color: #f5c53f;
+}
+
+.state-text[data-state="break"] .dot {
+  background: #b45309;
+  box-shadow: 0 0 0 4px rgba(180, 83, 9, 0.14);
+}
+
+/* 自定义时长 */
+.custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+
+.custom .label {
+  font-size: 13px;
+  color: var(--ink-3);
+  font-weight: 550;
+}
+
+.custom input {
+  width: 76px;
+  padding: 11px 12px;
+  font-family: var(--font-num);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ink);
+  background: #fbfcfe;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.custom input:focus {
+  outline: none;
+  border-color: #bcd3ff;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.custom .unit {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.hint {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+
+kbd {
+  font-family: var(--font-num);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .wrap {
+    padding: 18px 14px 0;
+  }
+  .topbar {
+    padding: 12px 14px;
+  }
+  .presets {
+    grid-template-columns: 1fr 1fr;
+  }
+  .row.tune button {
+    min-width: 0;
+  }
+}

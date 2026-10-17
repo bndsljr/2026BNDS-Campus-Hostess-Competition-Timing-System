@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="robots" content="noindex" />
+    <title>计时控制台 · BNDS 主持人大赛</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="control">
+    <div class="topbar">
+      <a class="brand" href="/" target="_blank" rel="noopener" title="打开大屏显示">
+        <picture class="brand-logo">
+          <source srcset="/logo.webp" type="image/webp" />
+          <img src="/logo.png" alt="BNDS TV" draggable="false" />
+        </picture>
+        <span>控制台 /set</span>
+      </a>
+      <div class="right">
+        <span class="pill" id="conn"><span class="dot"></span><span id="conn-text">连接中…</span></span>
+        <span class="pill" id="viewers"><span class="dot ok"></span><span id="viewers-text">– 台设备</span></span>
+        <a class="link" href="/" target="_blank" rel="noopener">打开大屏 ↗</a>
+        <a class="link" href="/v" target="_blank" rel="noopener">竖屏 ↗</a>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <section class="card preview" id="clock-card">
+        <div class="clock" id="clock" data-state-target="#clock-card"></div>
+        <!-- 休息中：与大屏一致显示赛事标题，让操控者一眼看到现场画面 -->
+        <div class="preview-break" id="preview-break">
+          <span class="bt-num">2026</span>
+          <span class="bt-cjk">主持人大赛</span>
+        </div>
+        <div class="state-text" id="state-text" data-state="paused">
+          <span class="dot"></span><span id="state-label">已暂停</span>
+        </div>
+        <div class="hint" style="margin: 0" id="duration-text">设定时长 01:30</div>
+      </section>
+
+      <section class="card">
+        <h2>计时档位</h2>
+        <div class="presets">
+          <button class="preset" data-sec="30">30s</button>
+          <button class="preset" data-sec="90">90s</button>
+          <button class="preset" data-sec="150">150s</button>
+        </div>
+        <div class="custom">
+          <span class="label">自定义时长</span>
+          <input id="in-min" type="number" min="0" max="99" step="1" inputmode="numeric" />
+          <span class="unit">分</span>
+          <input id="in-sec" type="number" min="0" max="59" step="1" inputmode="numeric" />
+          <span class="unit">秒</span>
+          <button class="ghost" id="apply">应用</button>
+          <span class="unit">（1 秒 – 99 分 59 秒）</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>控制</h2>
+        <div class="row">
+          <button class="primary grow" id="toggle">开始</button>
+          <button class="ghost grow" id="reset">重置</button>
+          <button class="ghost grow" id="restart">重新开始</button>
+        </div>
+        <div class="row tune">
+          <button data-delta="-60000">−1 分</button>
+          <button data-delta="-10000">−10 秒</button>
+          <button data-delta="10000">+10 秒</button>
+          <button data-delta="60000">+1 分</button>
+        </div>
+        <p class="hint">
+          快捷键：<kbd>空格</kbd> 开始 / 暂停 · <kbd>R</kbd> 重置 · <kbd>Shift</kbd>+<kbd>R</kbd> 重新开始。<br />
+          只有本页（<code>/set</code>）能改动计时，其他设备打开的都是只读大屏，且所有设备显示完全一致。
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>休息</h2>
+        <div class="row">
+          <button class="ghost grow" id="break-toggle">开启休息 · 大屏显示标题</button>
+        </div>
+        <p class="hint">
+          开启后所有大屏（含竖屏）不再显示剩余时间，改显示「<strong>2026BNDS主持人大赛</strong>」。<br />
+          若计时正在进行，开启休息会先自动暂停并把剩余时间冻住；按「开始 / 继续 / 重新开始」会自动退出休息。
+        </p>
+      </section>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script src="/control.js"></script>
+  </body>
+</html>

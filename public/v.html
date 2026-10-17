@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="robots" content="noindex" />
+    <title>BNDS 主持人大赛 · 计时（竖屏）</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <!-- 侧屏（256×736 竖条屏）版。
+       侧屏 LED 是接在 16:9 输出（1920×1080 / 1600×900 都行）的「左上角」，
+       所以这个页面就是一张 16:9 画布，所有画面只在左上角 256×736 的区域里渲染
+       （区域外不会显示在 LED 上）。
+       区域尺寸由 v.js 按 devicePixelRatio 换算，可用 ?w=256&h=736 覆盖，?debug=1 显示边框。 -->
+  <body class="vertical" id="page-body">
+    <div class="v-screen" id="v-screen">
+      <div class="v-stage">
+        <picture class="v-logo">
+          <source srcset="/logo.webp" type="image/webp" />
+          <img src="/logo.png" alt="BNDS TV" draggable="false" />
+        </picture>
+
+        <!-- 时间竖排：每一位数字各占一行 -->
+        <div class="clock clock--column" id="clock" data-state-target="#v-screen" aria-live="off"></div>
+
+        <!-- 休息模式：不显示时间，改显示赛事标题 -->
+        <div class="break-title" id="break-title">
+          <span class="bt-num">2026</span>
+          <span class="bt-cjk">主持人大赛</span>
+        </div>
+      </div>
+
+      <div class="notice" id="notice">连接中断，正在重连…</div>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script src="/v.js"></script>
+  </body>
+</html>
